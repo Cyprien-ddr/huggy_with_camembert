@@ -1,0 +1,21 @@
+apiVersion: "ryax.tech/v2.0"
+kind: Processor
+spec:
+  id: huggy-example
+  human_name: QA with huggy db
+  type: python3
+  version: "1.1"
+  description: "TEST 1.0"
+  categories:
+    - Action
+    - QA
+  inputs:
+  - help: Question according Huggy db's
+    human_name: Question
+    name: question
+    type: string
+  outputs:
+  - help: Answers output
+    human_name: Answers
+    name: answers
+    type: string

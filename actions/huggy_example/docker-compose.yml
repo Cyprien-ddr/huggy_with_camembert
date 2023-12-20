@@ -1,0 +1,62 @@
+version: '2'
+
+networks:
+  traefik:
+    external: true
+
+services:
+  application:
+    image: debian:buster-slim
+    volumes:
+      - ./:/var/www/
+    tty: true
+
+  php:
+    image: insignagency/php:php7.4
+    volumes_from:
+      - application
+    labels:
+      - traefik.enable=false
+    networks:
+      - traefik
+
+  apache:
+    image: insignagency/apache
+    volumes_from:
+      - application
+    links:
+      - php
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - "traefik.http.routers.apache-https-test.rule=Host(`test.localhost`, `test-93d0c4-expose.insign.agency`)"
+      - "traefik.http.routers.apache-https-test.tls=true"
+      - "traefik.http.routers.apache-test.rule=Host(`test.localhost`, `aze-toto-acianfarani-expose.insign.agency`)"
+    networks:
+      - traefik
+
+  mysql:
+    image: mysql:8
+    # 64 MB instead of 16MB.
+    command: [mysqld, --max-allowed-packet=67108864]
+    volumes:
+      - db-data:/var/lib/mysql
+      - /tmp/docker-mysql-files:/var/lib/mysql-files
+    environment:
+      MYSQL_DATABASE: website
+      MYSQL_ROOT_PASSWORD: db_on_docker
+    ports:
+      - 3306:3306
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - "traefik.tcp.routers.mysql.rule=Host(`mysql.bayrol.localhost`)"
+      - "traefik.tcp.routers.mysql.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.mysql.entryPoints=mysql"
+    networks:
+      - traefik
+
+volumes:
+  db-data:
+
+
