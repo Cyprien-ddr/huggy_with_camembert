@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>QA Huggy with CamemBERT</title>
+       <link href="/static/header.css" rel="stylesheet">
+        <link href="/static/styles.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="div-header">
+    </div>
+    <div class="logo">
+        <div>
+            <a href="/"><img alt="" src="/static/logo.png"/></a>
+        </div>
+    </div>
+    <div align="center" class="block-search">
+      <form method="POST">
+        <input type="search" id="search" name="question" placeholder="Posez votre question" class="search" value="">
+      </form>
+      <br>
+      {% if question |length %}
+      <p><b>Question posée : {{ question | safe}}</b></p>
+      {% endif %}
+    </div>
+    <div class="container">
+
+                    <center>
+                <div class="div-hat-header">
+                    <p><table border="0" style="margin:0 auto; margin-top:-30px; margin-bottom:-50px;">
+	<tbody>
+		<tr>
+			<td border="0" style="font-size: 1.1em;line-height: 1.6em; border:none !important;"><b>Huggy</b>&nbsp;t&#39;aide &agrave; :&nbsp;<br />
+			<br />
+			- savoir&nbsp;<b>QUOI</b>&nbsp;ou&nbsp;<b>COMMENT</b>&nbsp;faire (fonctionnement interne et outils)<br />
+			- retrouver&nbsp;<b>OU</b>&nbsp;est une information (kit com, RH, DUP, etc...)&nbsp;<br />
+			- trouver&nbsp;<b>QUI</b>&nbsp;peut te renseigner<br />
+			<br />
+			Pose une question et c&#39;est parti !</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>&nbsp;</p>
+
+<p>&nbsp;</p>
+                    </p>
+                </div>
+    <div class="container">
+      <section id="blog-landing" style="height: 4520px;">
+        {%for i in result%}
+            <article class="white-panel">
+                <b>{{i['title'] | replace_regexp('<p>&nbsp;</p>', '') | safe }}</b>
+                {{i['result'] | replace_regexp('<p>&nbsp;</p>', '') | safe }}
+            </article>
+        {%endfor%}
+      </section>
+    </div>
+  </body>
+</html>

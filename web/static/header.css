@@ -1,0 +1,159 @@
+.div-header {
+    position: absolute;
+    right: 10%;
+    top: 20px;
+    font-size: 14px;
+    z-index: 10;
+}
+
+.button-admin {
+    background-color: #5353ff;
+    padding: 5px;
+    color: #FFF;
+    margin-left: 15px;
+    text-decoration: none;
+}
+
+form > div {
+    display: block;
+    float:left;
+    background-color: #d6d6d6;
+}
+
+
+
+.block-search{
+    padding: 20px 0 20px 0;
+    width: max-content;
+    margin: 0 auto;
+    margin-bottom: 30px;
+    margin-top: 20px;
+}
+
+
+
+
+.search{
+    -webkit-appearance: none;
+    width: 550px;
+    height: 55px !important;
+    padding: 15px !important;
+    border: 1px solid #000000;
+    font-family: 'ProduktWeb Light' !important;
+    color: #000;
+    font-size: 18px !important;
+    text-align: center;
+}
+
+select{border-radius: 0px !important}
+
+select  {
+    height: 55px;
+    -webkit-appearance: none;
+    background-color: #ffffff;
+    background-image: url(../uploads/images/bg-select.png);
+    background-position: 97% center;
+    background-repeat: no-repeat;
+    color: #000000;
+    font-size: 15px;
+    padding: 5px 10px;
+    text-overflow: ellipsis;
+    border-left:0px;
+    border-top: solid 1px #000000;
+    border-bottom: solid 1px #000000;
+    border-right: solid 1px #000000;
+    font-family: 'ProduktWeb Light';
+
+}
+
+
+
+
+
+
+
+
+
+
+
+#Rechercher {
+    border:none;
+    height: 55px;
+    width: 55px;
+    background-color:#F7F7F7;
+    text-indent:-9999px;
+    background-image: url(../uploads/images/picto-loupe.png);
+    background-position: center center;
+    background-repeat: no-repeat;
+
+}
+
+
+
+@media (max-width: 790px){
+    .search{
+        width: 320px;}
+}
+
+@media (max-width: 540px){
+    form > div {
+        display: block;
+        float:none;
+        background-color: #f7f7f7;
+        margin-bottom: 10px;
+    }
+
+    #categories, .search, #Rechercher {
+        width:315px;
+        margin-left:0px;}
+    select{
+        border-left:1px solid #000;
+    }
+
+}
+
+
+
+
+
+
+/* ----- AUTOCOMPLETION  -------- */
+
+ul.ui-menu li::before {
+    content: none;
+
+}
+
+ul.ui-menu li {
+    font-size:1em;
+    line-height: 2em;
+}
+
+
+ul.ui-menu li:hover {
+    background-color: #5353ff;
+}
+
+
+
+
+/*------------------ LOGO -------------------*/
+
+.logo > div {
+    margin: 0 auto;
+    padding-top: 50px;
+}
+
+.logo img{
+    margin:initial !important;
+    width: 80px;
+}
+.logo div {
+    max-width: 80px;
+    overflow: hidden;
+}
+
+.logo-link {
+    position: relative;
+    left: 150px;
+}

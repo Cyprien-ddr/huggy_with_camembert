@@ -1,0 +1,32 @@
+version: '2'
+
+networks:
+  traefik:
+    external: true
+
+services:
+  mysql:
+    image: mysql:8
+    # 64 MB instead of 16MB.
+    command: [mysqld, --max-allowed-packet=67108864]
+    volumes:
+      - db-data:/var/lib/mysql
+      - /tmp/docker-mysql-files:/var/lib/mysql-files
+    environment:
+      MYSQL_DATABASE: website
+      MYSQL_ROOT_PASSWORD: db_on_docker
+    ports:
+      - 3306:3306
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      - "traefik.tcp.routers.mysql.rule=Host(`mysql.bayrol.localhost`)"
+      - "traefik.tcp.routers.mysql.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.mysql.entryPoints=mysql"
+    networks:
+      - traefik
+
+volumes:
+  db-data:
+
+
