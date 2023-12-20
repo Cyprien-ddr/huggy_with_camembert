@@ -1,93 +1,86 @@
 #!/usr/bin/python3
-import sys
-from typing import Any
-import numpy as np
-import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from data_source.mysql import get_data
+from tf_idf import *
+from variance_filter import *
+from camembert import qa_extraction_camembert
+from find_similarity_cos import *
+from handle_error import handle_error
+from highlight import highlight
+from bs4 import BeautifulSoup
+from config import configs
 
 
-def pre_rerank(docs: list, question: str) -> list[list[str]]:
-    """
-    Pre-rerank the documents based on the given question.
-
-    :param docs: The list of documents to be pre-reranked.
-    :param question: The question to be used for pre-reranking.
-    :return: A list of lists containing the question and the page content for each document.
-    """
-    contents = [[question, data[0].page_content] for data in docs]
-    return contents
+def no_answer_found(id_article, article):
+    result = []
+    hat = "Réponse(s) approchante(s) (pas de réponse exacte trouvée) : "
+    reverse_id = id_article[::-1]
+    for index, id in enumerate(reverse_id):
+        # result.append(f"<a href=\"https://huggy.insign.fr/post/{id}\">https://huggy.insign.fr/post/{id}</a><br>")
+        result.append(article[index])
+    return hat, result 
 
 
-def rerank(contents: list[list[str]]):
-    """
-    Rerank the documents based on the given list
-
-    :param contents: list of lists containing the question and the page content for each document
-    :return: list sorted by relevance of the document
-    """
-    tokenizer = AutoTokenizer.from_pretrained('BAAI/bge-reranker-large')
-    model = AutoModelForSequenceClassification.from_pretrained('BAAI/bge-reranker-large')
-    model.eval()
-
-    with torch.no_grad():
-        inputs = tokenizer(contents, padding=True, truncation=True, return_tensors='pt', max_length=512)
-        scores = model(**inputs, return_dict=True).logits.view(-1, ).float()
-
-    scores = scores.tolist()
-
-    sorted_indices = np.argsort(scores)
-
-    id_sorted = sorted_indices[::-1]
-    return id_sorted
+def one_answer(answers, id_article, article):
+    result = []
+    # hat = f"Une réponse correspondante a été trouvée dans l'article : <a href=\"https://huggy.insign.fr/post/{id_article[0]}\">https://huggy.insign.fr/post/{id_article[0]}</a><br><br> : <br>"
+    hat = "Une réponse pertinente trouvée (pas de réponse exacte trouvée) : "
+    result.append(highlight(article[0], answers[0]))
+    return hat, result 
 
 
-def sort_list_of_dicts(list_of_dicts: list, index_order: list) -> list:
-    """
-    Sorts the given list of dictionaries
+def one_max_answer(answers, id_article, article, index): 
+    result = []
+    #hat = f"My best answer is in the article : <a href=\"https://huggy.insign.fr/post/{id_article[index]}\">https://huggy.insign.fr/post/{id_article[index]}</a><br><br>The answer is : <br>"
+    hat = "Une réponse trouvée : "
+    result.append(highlight(article[index], answers[index]))
+    return hat, result 
+    
+def main(user_question):
 
-    :param list_of_dicts: list of dictionaries to be sorted
-    :param index_order: list of dictionaries sorted by relevance
-    :return: sorted list of dictionaries
-    """
-    sorted_list = []
-    for i in index_order:
-        print(f"{i}")
-        sorted_list.append(list_of_dicts[i])
+    handle_error()
+    # Get all articles with the db
+    articles, id_articles = get_data()
 
-    return sorted_list
+    # Filter the entire db to retrieve the 10 articles most related to the question with TF-IDF algo
+    # Renvoie un dic avec mot et nombre d'occurences (fréquence)
+    print("tf_idf_filter")
+    most_similar_articles, matrix_article = tf_idf_filter(articles, user_question)
+    # Renvoie deux dic, un avec la similarité, un avec l'id article
+    print("tf_idf_fct")
+    cosine_similarities, id_articles = tf_idf_fct(articles, user_question, id_articles)
+    # ATTENTION, pdf = pounded density function
+    x_values, pdf_values, std_deviation, variance = create_pdf_and_extract_stats(cosine_similarities)
 
+    # Filter output n articles with the variance of pdf->tf-idf (1 <= n <= 10)
+    print("filter_variance")
+    articles, id_articles = filter_variance(variance, std_deviation, matrix_article, id_articles)
 
-def extract_metadatas(structure: list[tuple]) -> list[dict]:
-    """
-    Extracts the 'html' and 'title' metadata from a list of tuples with the specified structure.
+    # Pipeline with the model CamemBERT
+    print("qa_extraction_camembert")
+    answers, id_article, articles_filtered, scores = qa_extraction_camembert(articles, user_question, id_articles)
 
-    :param structure: The list of tuples with the structure (Document, float).
-    :return: A list of 'html' metadata strings.
-    """
-    return [{'result': doc.metadata.get('html', ''), 'title': doc.metadata.get('title', '')} for doc, _ in structure]
+    # If camembert find max one relevant answer == .2 print and exit code
+    # or one relevant answer > .5 in the BEST tf-idf article print and exit code
+    if len(answers) < 1:
+        hat, result = no_answer_found(id_articles, articles)
+        return hat, result 
+    if len(answers) == 1:
+        hat, result = one_answer(answers, id_article, articles_filtered)
+        return hat, result 
+    index = len(answers) - 1
+    if id_article[index] == id_articles[len(id_articles) - 1] and scores[index] > .5:
+        hat, result = one_max_answer(answers, id_article, articles_filtered, index)
+        return hat, result 
 
+    # Init the model for sentence similarity
+    model_name = "paraphrase-MiniLM-L12-v2"
+    print("SentenceTransformer")
+    model = SentenceTransformer(model_name)
+    # Best response with Question / Answers similarity
+    # find_best_sim_qa(model, answers, user_question)
+    print("find_best_sim_aa")
+    # Output redundancy similarity between all answers
+    hat, result = find_best_sim_aa(model, answers, id_article, articles_filtered)
+    return hat, result 
 
-def main(question: str, vector_store):
-    """
-    The main entry point of the program
-
-    :param vector_store: FAISS vector store
-    :param question: A string representing the user's query.
-    :return: None. The function prints the search results to the console.
-    """
-    print("Hello World")
-    results = vector_store.similarity_search_with_score(question, k=50)
-    for doc, score in results:
-        print(f"Content: {doc.page_content}\nMetadata: {doc.metadata}, Score: {score}",
-              end="\n------------------------\n")
-
-    index = rerank(pre_rerank(results, question))
-    for row in index:
-        print(f"Results : {row}")
-    print(index)
-    db = sort_list_of_dicts(results, np.ndarray.tolist(index))
-    print(db)
-    result = extract_metadatas(db)
-    print("\n\n-------------------------\n\n")
-    print(result)
-    return result
+#main("Par quel moyen se procurer un casque ?");
